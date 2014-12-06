@@ -35,7 +35,7 @@ namespace Aura.Channel.Scripting.Scripts
 			get
 			{
 				if (_player == null)
-					throw new Exception("NpcScript: Missing player in " + this.GetType().Name);
+					throw new InvalidOperationException("NpcScript: Missing player in " + this.GetType().Name); // TODO: Log instead?
 				return _player;
 			}
 			set { _player = value; }
