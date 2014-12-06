@@ -25,6 +25,8 @@ namespace Aura.Channel.World
 		/// </summary>
 		public int Count { get { return _regions.Count; } }
 
+		public event Action Heartbeat;
+
 		public WorldManager()
 		{
 			_regions = new Dictionary<int, Region>();
@@ -80,14 +82,14 @@ namespace Aura.Channel.World
 		/// <summary>
 		/// Due time of the heartbeat timer.
 		/// </summary>
-		public const int HeartbeatTime = 500;
+		public const int HeartbeatPeriod = 500;
 		public const int Second = 1000, Minute = Second * 60, Hour = Minute * 60;
 		public const int ErinnMinute = 1500, ErinnHour = ErinnMinute * 60, ErinnDay = ErinnHour * 24;
 
 		private bool _initialized;
 		private Timer _heartbeatTimer;
-		private DateTime _lastHeartbeat;
-		private double _secondsTime, _minutesTime, _hoursTime, _erinnTime;
+		private DateTime _lastHeartbeat, _secondsTime, _minutesTime, _hoursTime;
+		private ErinnTime _erinnTime;
 		private int _mabiTickCount;
 
 		/// <summary>
@@ -97,9 +99,9 @@ namespace Aura.Channel.World
 		{
 			var now = DateTime.Now;
 
-			// Start timer on the next HeartbeatTime
+			// Start timer on the next HeartbeatPeriod
 			// (eg on the next full 500 ms) and run it regularly afterwards.
-			_heartbeatTimer = new Timer(Heartbeat, null, HeartbeatTime - (now.Ticks / 10000 % HeartbeatTime), HeartbeatTime);
+			_heartbeatTimer = new Timer(Pulse, null, HeartbeatPeriod - (now.Ticks / 10000 % HeartbeatPeriod), HeartbeatPeriod);
 		}
 
 		/// <summary>
@@ -111,30 +113,32 @@ namespace Aura.Channel.World
 		/// since the last heartbeat. This also ensures that they aren't
 		/// called multiple times.
 		/// </remarks>
-		private void Heartbeat(object _)
+		private void Pulse(object _)
 		{
 			var now = new ErinnTime(DateTime.Now);
-			var diff = (now.DateTime - _lastHeartbeat).TotalMilliseconds;
+			var diff = (now.DateTime - _lastHeartbeat);
 
-			if (diff != HeartbeatTime && Math.Abs(HeartbeatTime - diff) > HeartbeatTime && diff < 100000000)
+			if (diff.TotalMilliseconds > HeartbeatPeriod && diff.TotalMilliseconds < 100000000)
 			{
-				Log.Debug("OMG, the server has an irregular heartbeat! ({0})", diff.ToInvariant());
+				Log.Warning("OMG, the server has an irregular heartbeat! ({0})", diff.ToString());
 			}
 
 			// Seconds event
-			if ((_secondsTime += diff) >= Second)
+			if ((now.DateTime - _secondsTime).TotalSeconds >= 1)
 			{
-				_secondsTime = 0;
 				ChannelServer.Instance.Events.OnSecondsTimeTick(now);
+				_secondsTime = now.DateTime;
 			}
 
 			// Minutes event
-			if ((_minutesTime += diff) >= Minute)
+			if ((now.DateTime - _minutesTime).TotalMinutes >= 1)
 			{
-				_minutesTime = (now.DateTime.Second * Second + now.DateTime.Millisecond);
+				_minutesTime = now.DateTime;
 				ChannelServer.Instance.Events.OnMinutesTimeTick(now);
 
 				// Mabi tick event
+				// TODO: Each entity should probably track this on its own
+				// otherwise all egos will get hungry at the same time, etc
 				if (++_mabiTickCount >= 5)
 				{
 					ChannelServer.Instance.Events.OnMabiTick(now);
@@ -143,30 +147,29 @@ namespace Aura.Channel.World
 			}
 
 			// Hours event
-			if ((_hoursTime += diff) >= Hour)
+			if ((now.DateTime - _hoursTime).TotalHours >= 1)
 			{
-				_hoursTime = (now.DateTime.Minute * Minute + now.DateTime.Second * Second + now.DateTime.Millisecond);
 				ChannelServer.Instance.Events.OnHoursTimeTick(now);
+				_hoursTime = now.DateTime;
 			}
 
 			// Erinn time event
-			if ((_erinnTime += diff) >= ErinnMinute)
+			if ((now.DateTime - _erinnTime.DateTime).TotalMilliseconds >= ErinnMinute)
 			{
-				_erinnTime = 0;
 				ChannelServer.Instance.Events.OnErinnTimeTick(now);
 
-				// TODO: Dawn/Dusk/Midnight wouldn't be called if the server had a 500+ ms hickup.
-
 				// Erinn daytime event
-				if (now.IsDawn || now.IsDusk)
+				if (now.IsNight != _erinnTime.IsNight)
 				{
 					ChannelServer.Instance.Events.OnErinnDaytimeTick(now);
-					this.OnErinnDaytimeTick(now);
+					OnErinnDaytimeTick(now);
 				}
 
 				// Erinn midnight event
-				if (now.IsMidnight)
+				if (now.Day > _erinnTime.Day)
 					ChannelServer.Instance.Events.OnErinnMidnightTick(now);
+
+				_erinnTime = now;
 			}
 
 			this.UpdateEntities();
@@ -190,7 +193,7 @@ namespace Aura.Channel.World
 		/// Broadcasts Eweca notice, called at 6:00 and 18:00.
 		/// </summary>
 		/// <param name="now"></param>
-		private void OnErinnDaytimeTick(ErinnTime now)
+		private static void OnErinnDaytimeTick(ErinnTime now)
 		{
 			var notice = now.IsNight
 				? Localization.Get("Eweca is rising.\nMana is starting to fill the air all around.")
