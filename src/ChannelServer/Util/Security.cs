@@ -28,6 +28,7 @@ namespace Aura.Channel.Util
 	/// <summary>
 	/// The base for the exceptions to throw when someone does something bad
 	/// </summary>
+	[Serializable]
 	public abstract class SecurityViolationException : Exception
 	{
 		private const int _stackDepth = 5;
@@ -69,6 +70,7 @@ namespace Aura.Channel.Util
 	/// Used to indicate something suspicious happened, but it
 	/// *could* be nothing. This setting should be rarely used...
 	/// </summary>
+	[Serializable]
 	public sealed class MildViolation : SecurityViolationException
 	{
 		public MildViolation(string report, params object[] args)
@@ -80,6 +82,7 @@ namespace Aura.Channel.Util
 	/// <summary>
 	/// Something that is a strong indicator for a hack, but not certain.
 	/// </summary>
+	[Serializable]
 	public sealed class ModerateViolation : SecurityViolationException
 	{
 		public ModerateViolation(string report, params object[] args)
@@ -91,6 +94,7 @@ namespace Aura.Channel.Util
 	/// <summary>
 	/// Something happened that could really only be caused by a hack tool
 	/// </summary>
+	[Serializable]
 	public sealed class SevereViolation : SecurityViolationException
 	{
 		public SevereViolation(string report, params object[] args)

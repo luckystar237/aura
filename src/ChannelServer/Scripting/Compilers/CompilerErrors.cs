@@ -8,6 +8,7 @@ using System.Text;
 
 namespace Aura.Channel.Scripting.Compilers
 {
+	[Serializable]
 	public class CompilerErrorsException : Exception
 	{
 		public List<CompilerError> Errors { get; protected set; }
@@ -18,6 +19,7 @@ namespace Aura.Channel.Scripting.Compilers
 		}
 	}
 
+	[Serializable]
 	public class CompilerError : Exception
 	{
 		public string File { get; protected set; }
