@@ -31,10 +31,25 @@ namespace Aura.Channel.World.Entities.Creatures
 			ChannelServer.Instance.Events.ErinnDaytimeTick += this.OnErinnDaytimeTick;
 		}
 
+		~CreatureRegen()
+		{
+			this.Dispose(false);
+		}
+
 		public void Dispose()
 		{
-			ChannelServer.Instance.Events.SecondsTimeTick -= this.OnSecondsTimeTick;
-			ChannelServer.Instance.Events.ErinnDaytimeTick -= this.OnErinnDaytimeTick;
+			this.Dispose(true);
+
+			GC.SuppressFinalize(this);
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if (disposing)
+			{
+				ChannelServer.Instance.Events.SecondsTimeTick -= this.OnSecondsTimeTick;
+				ChannelServer.Instance.Events.ErinnDaytimeTick -= this.OnErinnDaytimeTick;
+			}
 		}
 
 		/// <summary>

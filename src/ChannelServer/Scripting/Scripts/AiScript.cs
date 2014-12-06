@@ -96,13 +96,30 @@ namespace Aura.Channel.Scripting.Scripts
 		}
 
 		/// <summary>
-		/// Disables heartbeat timer.
+		/// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
 		/// </summary>
 		public void Dispose()
 		{
-			_heartbeatTimer.Change(-1, -1);
-			_heartbeatTimer.Dispose();
-			_heartbeatTimer = null;
+			this.Dispose(true);
+
+			GC.SuppressFinalize(this);
+		}
+
+		~AiScript()
+		{
+			Dispose(false);
+		}
+
+		/// <summary>
+		/// Disables heartbeat timer.
+		/// </summary>
+		protected virtual void Dispose(bool disposing)
+		{
+			if (disposing)
+			{
+				_heartbeatTimer.Change(-1, -1);
+				_heartbeatTimer.Dispose();
+			}
 		}
 
 		/// <summary>

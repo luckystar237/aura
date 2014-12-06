@@ -71,40 +71,56 @@ namespace Aura.Channel.Scripting.Scripts
 			}
 		}
 
+		~GeneralScript()
+		{
+			this.Dispose(false);
+		}
+
+		public void Dispose()
+		{
+			this.Dispose(true);
+
+			GC.SuppressFinalize(this);
+		}
+
 		/// <summary>
 		/// Unsubscribes from all auto subscribed events.
 		/// </summary>
-		public virtual void Dispose()
+		protected virtual void Dispose(bool disposing)
 		{
-			var type = this.GetType();
-			var methods = this.GetType().GetMethods();
-			foreach (var method in methods)
+			if (disposing)
 			{
-				var attrs = method.GetCustomAttributes(typeof(OnAttribute), false);
-				if (attrs.Length == 0)
-					continue;
-
-				var attr = attrs[0] as OnAttribute;
-
-				var eventHandlerInfo = ChannelServer.Instance.Events.GetType().GetEvent(attr.Event);
-				if (eventHandlerInfo == null)
+				var type = this.GetType();
+				var methods = this.GetType().GetMethods();
+				foreach (var method in methods)
 				{
-					// Erroring on load should be enough.
-					//Log.Error("Dispose: Unknown event '{0}' on '{1}.{2}'.", attr.Event, type.Name, method.Name);
-					continue;
+					var attrs = method.GetCustomAttributes(typeof (OnAttribute), false);
+					if (attrs.Length == 0)
+						continue;
+
+					var attr = attrs[0] as OnAttribute;
+
+					var eventHandlerInfo = ChannelServer.Instance.Events.GetType().GetEvent(attr.Event);
+					if (eventHandlerInfo == null)
+					{
+						// Erroring on load should be enough.
+						//Log.Error("Dispose: Unknown event '{0}' on '{1}.{2}'.", attr.Event, type.Name, method.Name);
+						continue;
+					}
+
+					try
+					{
+						eventHandlerInfo.RemoveEventHandler(ChannelServer.Instance.Events,
+							Delegate.CreateDelegate(eventHandlerInfo.EventHandlerType, this, method));
+					}
+					catch (Exception ex)
+					{
+						Log.Exception(ex, "Dispose: Failed to unsubscribe '{1}.{2}' from '{0}'.", attr.Event, type.Name, method.Name);
+					}
 				}
 
-				try
-				{
-					eventHandlerInfo.RemoveEventHandler(ChannelServer.Instance.Events, Delegate.CreateDelegate(eventHandlerInfo.EventHandlerType, this, method));
-				}
-				catch (Exception ex)
-				{
-					Log.Exception(ex, "Dispose: Failed to unsubscribe '{1}.{2}' from '{0}'.", attr.Event, type.Name, method.Name);
-				}
+				this.CleanUp();
 			}
-
-			this.CleanUp();
 		}
 
 		/// <summary>

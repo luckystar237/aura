@@ -39,12 +39,15 @@ namespace Aura.Channel.World.Entities
 			this.Color1 = this.Color2 = this.Color2 = 0x808080;
 		}
 
-		public override void Dispose()
+		protected override void Dispose(bool disposing)
 		{
-			base.Dispose();
+			if (disposing)
+			{
+				if (this.AI != null)
+					this.AI.Dispose();
+			}
 
-			if (this.AI != null)
-				this.AI.Dispose();
+			base.Dispose(disposing);
 		}
 
 		public override void LoadDefault(bool fullyFunctional = true)

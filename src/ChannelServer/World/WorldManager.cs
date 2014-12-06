@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Aura.Channel.World
 {
-	public class WorldManager
+	public class WorldManager : IDisposable
 	{
 		private Dictionary<int, Region> _regions;
 
@@ -28,6 +28,29 @@ namespace Aura.Channel.World
 		public WorldManager()
 		{
 			_regions = new Dictionary<int, Region>();
+		}
+
+		~WorldManager()
+		{
+			this.Dispose(false);
+		}
+
+		/// <summary>
+		/// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+		/// </summary>
+		public void Dispose()
+		{
+			this.Dispose(true);
+
+			GC.SuppressFinalize(this);
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if (disposing)
+			{
+				_heartbeatTimer.Dispose();
+			}
 		}
 
 		/// <summary>

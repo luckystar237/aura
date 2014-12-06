@@ -17,7 +17,7 @@ using Boo.Lang.Compiler.TypeSystem;
 
 namespace Aura.Channel.World
 {
-	public class Region
+	public class Region : IDisposable
 	{
 		// TODO: Data?
 		public const int VisibleRange = 3000;
@@ -67,6 +67,28 @@ namespace Aura.Channel.World
 			this.Collisions.Init(_regionData);
 
 			this.LoadClientProps();
+		}
+
+		~Region()
+		{
+			this.Dispose(false);
+		}
+
+		public void Dispose()
+		{
+			this.Dispose(true);
+
+			GC.SuppressFinalize(this);
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if (disposing)
+			{
+				_creaturesRWLS.Dispose();
+				_propsRWLS.Dispose();
+				_itemsRWLS.Dispose();
+			}
 		}
 
 		/// <summary>

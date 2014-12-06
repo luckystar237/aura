@@ -590,14 +590,29 @@ namespace Aura.Channel.World.Entities
 			}
 		}
 
+		~Creature()
+		{
+			this.Dispose(false);
+		}
+
+		public void Dispose()
+		{
+			this.Dispose(true);
+
+			GC.SuppressFinalize(this);
+		}
+
 		/// <summary>
 		/// Called when creature is removed from the server.
 		/// (Killed NPC, disconnect, etc)
 		/// </summary>
-		public virtual void Dispose()
+		protected virtual void Dispose(bool disposing)
 		{
-			this.Regens.Dispose();
-			ChannelServer.Instance.Events.MabiTick -= this.OnMabiTick;
+			if (disposing)
+			{
+				this.Regens.Dispose();
+				ChannelServer.Instance.Events.MabiTick -= this.OnMabiTick;
+			}
 		}
 
 		public void Activate(CreatureStates state) { this.State |= state; }

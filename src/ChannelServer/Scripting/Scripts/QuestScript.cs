@@ -78,16 +78,19 @@ namespace Aura.Channel.Scripting.Scripts
 			return true;
 		}
 
-		public override void Dispose()
+		protected override void Dispose(bool disposing)
 		{
-			base.Dispose();
+			if (disposing)
+			{
+				ChannelServer.Instance.Events.PlayerLoggedIn -= this.OnPlayerLoggedIn;
+				ChannelServer.Instance.Events.CreatureKilledByPlayer -= this.OnCreatureKilledByPlayer;
+				ChannelServer.Instance.Events.PlayerReceivesItem -= this.OnPlayerReceivesOrRemovesItem;
+				ChannelServer.Instance.Events.PlayerRemovesItem -= this.OnPlayerReceivesOrRemovesItem;
+				ChannelServer.Instance.Events.PlayerCompletesQuest -= this.OnPlayerCompletesQuest;
+				ChannelServer.Instance.Events.SkillRankChanged -= this.OnSkillRankChanged;				
+			}
 
-			ChannelServer.Instance.Events.PlayerLoggedIn -= this.OnPlayerLoggedIn;
-			ChannelServer.Instance.Events.CreatureKilledByPlayer -= this.OnCreatureKilledByPlayer;
-			ChannelServer.Instance.Events.PlayerReceivesItem -= this.OnPlayerReceivesOrRemovesItem;
-			ChannelServer.Instance.Events.PlayerRemovesItem -= this.OnPlayerReceivesOrRemovesItem;
-			ChannelServer.Instance.Events.PlayerCompletesQuest -= this.OnPlayerCompletesQuest;
-			ChannelServer.Instance.Events.SkillRankChanged -= this.OnSkillRankChanged;
+			base.Dispose(disposing);
 		}
 
 		// Setup
