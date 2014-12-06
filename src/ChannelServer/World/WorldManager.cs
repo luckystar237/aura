@@ -25,7 +25,7 @@ namespace Aura.Channel.World
 		/// </summary>
 		public int Count { get { return _regions.Count; } }
 
-		public event Action Heartbeat;
+		public event Action<ErinnTime> Heartbeat;
 
 		public WorldManager()
 		{
@@ -98,6 +98,8 @@ namespace Aura.Channel.World
 		private void SetUpHeartbeat()
 		{
 			var now = DateTime.Now;
+			_lastHeartbeat = _secondsTime = _minutesTime = _hoursTime = DateTime.MinValue;
+			_erinnTime = new ErinnTime(DateTime.MinValue);
 
 			// Start timer on the next HeartbeatPeriod
 			// (eg on the next full 500 ms) and run it regularly afterwards.
@@ -118,7 +120,7 @@ namespace Aura.Channel.World
 			var now = new ErinnTime(DateTime.Now);
 			var diff = (now.DateTime - _lastHeartbeat);
 
-			if (diff.TotalMilliseconds > HeartbeatPeriod && diff.TotalMilliseconds < 100000000)
+			if (diff.TotalMilliseconds > HeartbeatPeriod*2 && diff.TotalMilliseconds < 100000000)
 			{
 				Log.Warning("OMG, the server has an irregular heartbeat! ({0})", diff.ToString());
 			}
@@ -172,21 +174,10 @@ namespace Aura.Channel.World
 				_erinnTime = now;
 			}
 
-			this.UpdateEntities();
+			if (this.Heartbeat != null)
+				this.Heartbeat(now);
 
 			_lastHeartbeat = now.DateTime;
-		}
-
-		/// <summary>
-		/// Updates all entities in all regions.
-		/// </summary>
-		private void UpdateEntities()
-		{
-			lock (_regions)
-			{
-				foreach (var region in _regions.Values)
-					region.UpdateEntities();
-			}
 		}
 
 		/// <summary>

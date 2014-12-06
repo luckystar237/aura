@@ -106,6 +106,11 @@ namespace Aura.Channel.World.Entities
 			this.Info.Color9 = 0xFF808080;
 		}
 
+		protected override void RemoveFromRegion(Region region)
+		{
+			region.RemoveProp(this);
+		}
+
 		public override Position GetPosition()
 		{
 			return new Position((int)this.Info.X, (int)this.Info.Y);

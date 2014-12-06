@@ -615,6 +615,12 @@ namespace Aura.Channel.World.Entities
 			}
 		}
 
+		protected override void RemoveFromRegion(Region region)
+		{
+			region.RemoveCreature(this);
+			this.Dispose();
+		}
+
 		public void Activate(CreatureStates state) { this.State |= state; }
 		public void Activate(CreatureStatesEx state) { this.StateEx |= state; }
 		public void Deactivate(CreatureStates state) { this.State &= ~state; }
@@ -1125,9 +1131,9 @@ namespace Aura.Channel.World.Entities
 						gold.Info.Region = this.RegionId;
 						gold.Info.X = dropPos.X;
 						gold.Info.Y = dropPos.Y;
-						gold.DisappearTime = DateTime.Now.AddSeconds(60);
-
 						this.Region.AddItem(gold);
+
+						gold.RegisterRemoval(DateTime.Now.AddSeconds(60));
 
 						amount -= gold.Info.Amount;
 					}
@@ -1147,9 +1153,9 @@ namespace Aura.Channel.World.Entities
 					item.Info.Region = this.RegionId;
 					item.Info.X = dropPos.X;
 					item.Info.Y = dropPos.Y;
-					item.DisappearTime = DateTime.Now.AddSeconds(60);
-
 					this.Region.AddItem(item);
+
+					item.RegisterRemoval(DateTime.Now.AddSeconds(60));
 				}
 			}
 		}

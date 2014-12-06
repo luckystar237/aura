@@ -94,9 +94,10 @@ namespace Aura.Channel.World.Entities
 		/// </summary>
 		public override bool LevelingEnabled { get { return true; } }
 
-		public PlayerCreature()
+		protected PlayerCreature()
 		{
 			this.Watching = true;
+			ChannelServer.Instance.World.Heartbeat += (t) => this.LookAround();
 		}
 
 		/// <summary>
@@ -130,7 +131,7 @@ namespace Aura.Channel.World.Entities
 		/// </summary>
 		public void LookAround()
 		{
-			if (!this.Watching)
+			if (!this.Watching || this.Region == null)
 				return;
 
 			var currentlyVisible = this.Region.GetVisibleEntities(this);

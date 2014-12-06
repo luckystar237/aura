@@ -898,7 +898,7 @@ namespace Aura.Channel.Util
 		{
 			var items = target.Region.GetAllItems();
 			foreach (var item in items)
-				item.DisappearTime = DateTime.Now;
+				item.RegisterRemoval(DateTime.Now);
 
 			Send.ServerMessage(sender, Localization.Get("Marked all items on the floor to disappear now."));
 			if (target != sender)

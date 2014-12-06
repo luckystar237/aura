@@ -2,6 +2,7 @@
 // For more information, see license file in the main folder
 
 using System;
+using Aura.Shared.Mabi;
 
 namespace Aura.Channel.World.Entities
 {
@@ -18,11 +19,36 @@ namespace Aura.Channel.World.Entities
 
 		public abstract DataType DataType { get; }
 
-		public DateTime DisappearTime { get; set; }
-
 		public abstract Position GetPosition();
 
 		public bool Is(DataType type) { return (this.DataType == type); }
+
+		/// <summary>
+		/// Helper method to register this instance for removal after the given time.
+		/// </summary>
+		/// <param name="disappearTime">The disappear time.</param>
+		public void RegisterRemoval(DateTime disappearTime)
+		{
+			Action<ErinnTime> removal = null;
+			removal = (t) =>
+			{
+				if (t.DateTime > disappearTime)
+				{
+					if (this.Region != null && this.Region.Contains(this.EntityId))
+						this.RemoveFromRegion(this.Region);
+
+					ChannelServer.Instance.World.Heartbeat -= removal;
+				}
+			};
+
+			ChannelServer.Instance.World.Heartbeat += removal;
+		}
+
+		/// <summary>
+		/// Any code needed to remove this instance from the region.
+		/// </summary>
+		/// <param name="region">The region.</param>
+		protected abstract void RemoveFromRegion(Region region);
 	}
 
 	/// <summary>

@@ -39,6 +39,14 @@ namespace Aura.Channel.World.Entities
 			this.Color1 = this.Color2 = this.Color2 = 0x808080;
 		}
 
+		protected override void RemoveFromRegion(Region region)
+		{
+			if (this.SpawnId > 0)
+				ChannelServer.Instance.ScriptManager.Spawn(this.SpawnId, 1);
+
+			base.RemoveFromRegion(region);
+		}
+
 		protected override void Dispose(bool disposing)
 		{
 			if (disposing)
@@ -144,7 +152,7 @@ namespace Aura.Channel.World.Entities
 		{
 			base.Kill(killer);
 
-			this.DisappearTime = DateTime.Now.AddSeconds(20);
+			this.RegisterRemoval(DateTime.Now.AddSeconds(20));
 
 			if (killer == null)
 				return;

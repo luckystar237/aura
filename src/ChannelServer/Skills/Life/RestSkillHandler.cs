@@ -123,7 +123,7 @@ namespace Aura.Channel.Skills.Life
 			Send.AssignSittingProp(creature, 0, 0);
 
 			// Remove chair in 1s
-			creature.Temp.SittingProp.DisappearTime = DateTime.Now.AddSeconds(1);
+			creature.Temp.SittingProp.RegisterRemoval(DateTime.Now.AddSeconds(1));
 
 			creature.Temp.SittingProp = null;
 		}

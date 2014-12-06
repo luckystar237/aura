@@ -115,105 +115,6 @@ namespace Aura.Channel.World
 		}
 
 		/// <summary>
-		/// Updates all entites, removing dead ones, updating visibility, etc.
-		/// </summary>
-		public void UpdateEntities()
-		{
-			this.RemoveOverdueEntities();
-			this.UpdateVisibility();
-		}
-
-		/// <summary>
-		/// Removes expired entities. 
-		/// </summary>
-		private void RemoveOverdueEntities()
-		{
-			var now = DateTime.Now;
-
-			// Get all expired entities
-			var disappear = new List<Entity>();
-
-			_creaturesRWLS.EnterReadLock();
-			try
-			{
-				disappear.AddRange(_creatures.Values.Where(a => a.DisappearTime > DateTime.MinValue && a.DisappearTime < now));
-			}
-			finally
-			{
-				_creaturesRWLS.ExitReadLock();
-			}
-
-			_itemsRWLS.EnterReadLock();
-			try
-			{
-				disappear.AddRange(_items.Values.Where(a => a.DisappearTime > DateTime.MinValue && a.DisappearTime < now));
-			}
-			finally
-			{
-				_itemsRWLS.ExitReadLock();
-			}
-
-			_propsRWLS.EnterReadLock();
-			try
-			{
-				disappear.AddRange(_props.Values.Where(a => a.DisappearTime > DateTime.MinValue && a.DisappearTime < now));
-			}
-			finally
-			{
-				_propsRWLS.ExitReadLock();
-			}
-
-			// Remove them from the region
-			foreach (var entity in disappear)
-			{
-				if (entity.Is(DataType.Creature))
-				{
-					var creature = entity as Creature;
-					this.RemoveCreature(creature);
-					creature.Dispose();
-
-					// Respawn
-					var npc = creature as NPC;
-					if (npc != null && npc.SpawnId > 0)
-						ChannelServer.Instance.ScriptManager.Spawn(npc.SpawnId, 1);
-				}
-				else if (entity.Is(DataType.Item))
-				{
-					this.RemoveItem(entity as Item);
-				}
-				else if (entity.Is(DataType.Prop))
-				{
-					this.RemoveProp(entity as Prop);
-				}
-			}
-		}
-
-		/// <summary>
-		/// Updates visible entities on all clients.
-		/// </summary>
-		private void UpdateVisibility()
-		{
-			_creaturesRWLS.EnterReadLock();
-			try
-			{
-				foreach (var creature in _creatures.Values)
-				{
-					var pc = creature as PlayerCreature;
-
-					// Only update player creatures
-					if (pc == null)
-						continue;
-
-					pc.LookAround();
-				}
-			}
-			finally
-			{
-				_creaturesRWLS.ExitReadLock();
-			}
-		}
-
-		/// <summary>
 		/// Returns a list of visible entities, from the view point of creature.
 		/// </summary>
 		/// <param name="creature"></param>
@@ -274,6 +175,11 @@ namespace Aura.Channel.World
 			return result;
 		}
 
+		public bool Contains(long id)
+		{
+			return GetItem(id) != null || GetCreature(id) != null || GetProp(id) != null;
+		}
+
 		/// <summary>
 		/// Adds creature to region, sends EntityAppears.
 		/// </summary>
@@ -301,9 +207,6 @@ namespace Aura.Channel.World
 					_clients.Add(creature.Client);
 			}
 
-			// TODO: Technically not required? Handled by LookAround.
-			Send.EntityAppears(creature);
-
 			if (creature.EntityId < MabiId.Npcs)
 				Log.Status("Creatures currently in region {0}: {1}", this.Id, _creatures.Count);
 		}
@@ -322,9 +225,6 @@ namespace Aura.Channel.World
 			{
 				_creaturesRWLS.ExitWriteLock();
 			}
-
-			// TODO: Technically not required? Handled by LookAround.
-			Send.EntityDisappears(creature);
 
 			creature.Region = null;
 
@@ -500,7 +400,6 @@ namespace Aura.Channel.World
 			if (!prop.ServerSide)
 			{
 				Log.Error("RemoveProp: Client side props can't be removed.");
-				prop.DisappearTime = DateTime.MinValue;
 				return;
 			}
 
@@ -626,7 +525,9 @@ namespace Aura.Channel.World
 		public void DropItem(Item item, int x, int y)
 		{
 			item.Move(this.Id, x, y);
-			item.DisappearTime = DateTime.Now.AddSeconds(Math.Max(60, (item.OptionInfo.Price / 100) * 60));
+			var disappearTime = DateTime.Now.AddSeconds(Math.Max(60, (item.OptionInfo.Price / 100) * 60));
+
+			item.RegisterRemoval(disappearTime);
 
 			this.AddItem(item);
 		}
