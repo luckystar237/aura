@@ -178,8 +178,9 @@ namespace Aura.Channel.Database
 			float lifeDelta = 0, manaDelta = 0, staminaDelta = 0;
 
 			using (var conn = this.Connection)
-			using (var mc = new MySqlCommand("SELECT * FROM `" + table + "` AS c INNER JOIN `creatures` AS cr ON c.creatureId = cr.creatureId WHERE `entityId` = @entityId", conn))
+			using (var mc = new MySqlCommand("SELECT * FROM @table AS c INNER JOIN `creatures` AS cr ON c.creatureId = cr.creatureId WHERE `entityId` = @entityId", conn))
 			{
+				mc.Parameters.AddWithValue("@table", table);
 				mc.Parameters.AddWithValue("@entityId", entityId);
 
 				using (var reader = mc.ExecuteReader())
