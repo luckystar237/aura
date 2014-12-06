@@ -73,7 +73,7 @@ namespace Aura.Channel.World.Entities
 		public bool IsMale { get { return (this.RaceData != null && this.RaceData.Gender == Gender.Male); } }
 		public bool IsFemale { get { return (this.RaceData != null && this.RaceData.Gender == Gender.Female); } }
 
-		public override int RegionId { get; set; }
+		public sealed override int RegionId { get; set; }
 
 		/// <summary>
 		/// Returns whether creature is able to receive exp and level up.
