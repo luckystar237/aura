@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Aura development team - Licensed under GNU GPL
 // For more information, see license file in the main folder
 
+using System;
 using System.Linq;
 using Aura.Data;
 using Aura.Shared.Mabi.Const;
@@ -32,12 +33,23 @@ namespace Aura.Channel.World.Quests
 		/// <summary>
 		/// Gets the type code used in the packet.
 		/// </summary>
-		public abstract byte __TypeCode { get; }
+		[Obsolete("Do not use this outside of packets! Use the `is` operator instead!")]
+		public abstract byte TypeCode { get; }
 
 		protected QuestObjective(int amount)
 		{
 			this.MetaData = new MabiDictionary();
 			this.Amount = amount;
+		}
+
+		protected enum TypeCodes : byte
+		{
+			Kill = 1,
+			Collect = 2,
+			Talk = 3,
+			Deliver = 4,
+			ReachRank = 9,
+			ReachLevel = 15,
 		}
 	}
 
@@ -51,7 +63,8 @@ namespace Aura.Channel.World.Quests
 		/// <summary>
 		/// Gets the type code used in the packet.
 		/// </summary>
-		public sealed override byte __TypeCode { get { return 1; } }
+		[Obsolete("Do not use this outside of packets! Use the `is` operator instead!")]
+		public sealed override byte TypeCode { get { return (byte)TypeCodes.Kill; } }
 
 		public QuestObjectiveKill(int amount, params string[] raceTypes)
 			: base(amount)
@@ -84,7 +97,8 @@ namespace Aura.Channel.World.Quests
 		/// <summary>
 		/// Gets the type code used in the packet.
 		/// </summary>
-		public sealed override byte __TypeCode { get { return 2; } }
+		[Obsolete("Do not use this outside of packets! Use the `is` operator instead!")]
+		public sealed override byte TypeCode { get { return (byte)TypeCodes.Collect; } }
 
 		public QuestObjectiveCollect(int itemId, int amount)
 			: base(amount)
@@ -108,7 +122,8 @@ namespace Aura.Channel.World.Quests
 		/// <summary>
 		/// Gets the type code used in the packet.
 		/// </summary>
-		public sealed override byte __TypeCode { get { return 3; } }
+		[Obsolete("Do not use this outside of packets! Use the `is` operator instead!")]
+		public sealed override byte TypeCode { get { return (byte)TypeCodes.Talk; } }
 
 		public QuestObjectiveTalk(string npcName)
 			: base(1)
@@ -131,7 +146,8 @@ namespace Aura.Channel.World.Quests
 		/// <summary>
 		/// Gets the type code used in the packet.
 		/// </summary>
-		public sealed override byte __TypeCode { get { return 9; } }
+		[Obsolete("Do not use this outside of packets! Use the `is` operator instead!")]
+		public sealed override byte TypeCode { get { return (byte)TypeCodes.ReachRank; } }
 
 		public QuestObjectiveReachRank(SkillId skillId, SkillRank rank)
 			: base(1)

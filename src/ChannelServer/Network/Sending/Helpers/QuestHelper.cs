@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Aura development team - Licensed under GNU GPL
 // For more information, see license file in the main folder
 
+#pragma warning disable 618
+
 using Aura.Channel.World.Quests;
 using Aura.Shared.Network;
 using System;
@@ -92,7 +94,7 @@ namespace Aura.Channel.Network.Sending.Helpers
 				var progress = quest.GetProgress(objectiveData.Key);
 
 				// Objective
-				packet.PutByte(objective.__TypeCode);
+				packet.PutByte(objective.TypeCode);
 				packet.PutString(objective.Description);
 				packet.PutString(objective.MetaData.ToString());
 
