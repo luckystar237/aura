@@ -56,6 +56,7 @@ namespace Aura.Channel.Scripting
 			_compilers = new Dictionary<string, Compiler>();
 			_compilers.Add("cs", new CSharpCompiler());
 			_compilers.Add("boo", new BooCompiler());
+			_compilers.Add("dll", new DllLoader());
 
 			_scripts = new Dictionary<string, Type>();
 			_itemScripts = new Dictionary<int, ItemScript>();
