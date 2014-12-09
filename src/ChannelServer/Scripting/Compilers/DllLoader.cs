@@ -18,7 +18,10 @@ namespace Aura.Channel.Scripting.Compilers
 			}
 			catch (Exception ex)
 			{
-				throw;
+				var up = new CompilerErrorsException();
+				up.Errors.Add(new CompilerError(path, ex.Message, false));
+
+				throw up;
 			}
 		}
 	}

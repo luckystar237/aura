@@ -404,26 +404,8 @@ namespace Aura.Channel.Scripting
 					Log.Warning("Unable to delete '{0}'", outPath);
 				}
 
-				var lines = File.ReadAllLines(path);
-
-				foreach (var err in ex.Errors)
-				{
-					// Error msg
-					Log.WriteLine((!err.IsWarning ? LogLevel.Error : LogLevel.Warning), "In {0} on line {1}, column {2}", err.File, err.Line, err.Column);
-					Log.WriteLine(LogLevel.None, "          {0}", err.Message);
-
-					// Display lines around the error
-					int startLine = Math.Max(1, err.Line - 1);
-					int endLine = Math.Min(lines.Length, startLine + 2);
-					for (int i = startLine; i <= endLine; ++i)
-					{
-						// Make sure we don't get out of range.
-						// (ReadAllLines "trims" the input)
-						var line = (i <= lines.Length) ? lines[i - 1] : "";
-
-						Log.WriteLine(LogLevel.None, "  {2} {0:0000}: {1}", i, line, (err.Line == i ? '*' : ' '));
-					}
-				}
+				foreach (var e in ex.Errors)
+					e.Print();
 			}
 			catch (Exception ex)
 			{

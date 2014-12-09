@@ -33,7 +33,7 @@ namespace Aura.Channel.Scripting.Compilers
 				foreach (System.CodeDom.Compiler.CompilerError err in errors)
 				{
 					// Line-1 to compensate lines added by the pre-compiler.
-					var newEx = new CompilerError(path, err.Line - 1, err.Column, err.ErrorText, err.IsWarning);
+					var newEx = new LinedCompilerError(path, err.Line - 1, err.Column, err.ErrorText, err.IsWarning);
 					newExs.Errors.Add(newEx);
 				}
 
