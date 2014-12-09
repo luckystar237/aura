@@ -396,7 +396,8 @@ namespace Aura.Channel.Scripting
 			{
 				try
 				{
-					File.Delete(outPath);
+					if (File.Exists(outPath))
+						File.Delete(outPath);
 				}
 				catch (UnauthorizedAccessException)
 				{

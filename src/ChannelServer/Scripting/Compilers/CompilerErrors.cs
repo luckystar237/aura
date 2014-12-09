@@ -18,16 +18,17 @@ namespace Aura.Channel.Scripting.Compilers
 		}
 	}
 
-	public class CompilerError : Exception
+	public class CompilerError
 	{
 		public string File { get; protected set; }
 		public int Line { get; protected set; }
 		public int Column { get; protected set; }
 		public bool IsWarning { get; protected set; }
+		public string Message { get; protected set; }
 
 		public CompilerError(string file, int line, int column, string message, bool isWarning)
-			: base(message)
 		{
+			this.Message = message;
 			this.File = file;
 			this.Line = line;
 			this.Column = column;
