@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using Aura.Shared.Util;
 
-namespace Aura.Channel.Scripting.Compilers
+namespace Aura.Channel.Scripting.Loaders
 {
 	public class CompilerErrorsException : Exception
 	{

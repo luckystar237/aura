@@ -1,29 +1,30 @@
-﻿// Copyright (c) Aura development team - Licensed under GNU GPL
-// For more information, see license file in the main folder
-
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
-using Aura.Shared.Util;
-using CSScriptLibrary;
-using System.Text.RegularExpressions;
+using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using CSScriptLibrary;
 
-namespace Aura.Channel.Scripting.Compilers
+namespace Aura.Channel.Scripting.Loaders
 {
-	public class CSharpCompiler : Compiler
+	public class CSharpLoader : CompilingLoader
 	{
-		public override Assembly Compile(string path, string outPath)
+		public override IEnumerable<string> HandledExtensions
 		{
-			Assembly asm = null;
+			get { return new[] {"cs"}; }
+		}
+
+		protected override System.Reflection.Assembly Compile(string inPath, string outPath)
+		{
 			try
 			{
-				if (this.ExistsAndUpToDate(path, outPath))
-					return Assembly.LoadFrom(outPath);
+				var src = this.PreCompile(File.ReadAllText(inPath));
 
-				asm = CSScript.LoadCode(this.PreCompile(File.ReadAllText(path)));
+				var asm = CSScript.LoadCode(src, outPath, IsDebug);
 
-				this.SaveAssembly(asm, outPath);
+				return asm;
 			}
 			catch (csscript.CompilerException ex)
 			{
@@ -33,37 +34,27 @@ namespace Aura.Channel.Scripting.Compilers
 				foreach (System.CodeDom.Compiler.CompilerError err in errors)
 				{
 					// Line-1 to compensate lines added by the pre-compiler.
-					var newEx = new LinedCompilerError(path, err.Line - 1, err.Column, err.ErrorText, err.IsWarning);
+					var newEx = new LinedCompilerError(inPath, err.Line - 1, err.Column, err.ErrorText, err.IsWarning);
 					newExs.Errors.Add(newEx);
 				}
 
 				throw newExs;
 			}
-			catch (UnauthorizedAccessException)
-			{
-				// Thrown if file can't be copied. Happens if script was
-				// initially loaded from cache.
-				// TODO: Also thrown if CS-Script can't create the file,
-				//   ie under Linux, if /tmp/CSSCRIPT isn't writeable.
-				//   Handle that somehow?
-			}
-			catch (Exception ex)
-			{
-				Log.Exception(ex);
-			}
-
-			return asm;
 		}
-
 		public string PreCompile(string script)
 		{
 			// Default usings and compiler options
 			var add = new StringBuilder();
 
-			// Mono needs this to not treat harmless warnings as errors
+			add.Append("//css_co");
+
+			// Mono needs these to not treat harmless warnings as errors
 			// (like a missing await in an async Task) and to not spam
 			// us with warnings.
-			add.AppendLine("//css_co /warnaserror- /warn:0;");
+			if (Type.GetType ("Mono.Runtime") != null)
+				add.Append(" /warnaserror- /warn:0;");
+
+			add.AppendLine();
 
 			add.Append("using System;");
 			add.Append("using System.Collections.Generic;");

@@ -10,7 +10,12 @@ namespace Aura.Channel.Scripting.Loaders
 {
 	public abstract class Loader
 	{
-		private static readonly Loader[] _loaders = {};
+		private static readonly Loader[] _loaders =
+		{
+			new DllLoader(),
+			new CSharpLoader(),
+			new BooLoader()
+		};
 
 		public abstract IEnumerable<string> HandledExtensions { get; }
 
@@ -27,8 +32,25 @@ namespace Aura.Channel.Scripting.Loaders
 		{
 			var ext = Path.GetExtension(path).TrimStart('.');
 
-			return _loaders.FirstOrDefault(l => 
+			return _loaders.FirstOrDefault(l =>
 				l.HandledExtensions.Any(e => e.Equals(ext, StringComparison.OrdinalIgnoreCase)));
+		}
+
+		public static Assembly TryLoadAssembly(string path)
+		{
+			var loader = GetLoader(path);
+
+			return loader == null ? null : loader.Load(path);
+		}
+		
+		public static Assembly LoadAssembly(string path)
+		{
+			var loader = GetLoader(path);
+
+			if (loader == null)
+				throw new InvalidOperationException("No loader could be found for the given file type.");
+
+			return loader.Load(path);
 		}
 	}
 }

@@ -2,7 +2,6 @@
 // For more information, see license file in the main folder
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
@@ -12,14 +11,11 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Aura.Channel.Database;
 using Aura.Channel.Network.Sending;
-using Aura.Channel.Scripting.Compilers;
+using Aura.Channel.Scripting.Loaders;
 using Aura.Channel.Scripting.Scripts;
-using Aura.Channel.Skills;
 using Aura.Channel.World;
 using Aura.Channel.World.Entities;
-using Aura.Channel.World.Quests;
 using Aura.Data;
 using Aura.Data.Database;
 using Aura.Shared.Mabi;
@@ -32,9 +28,10 @@ namespace Aura.Channel.Scripting
 	{
 		private const string SystemIndexRoot = "system/scripts/";
 		private const string UserIndexRoot = "user/scripts/";
-		private const string IndexPath = SystemIndexRoot + "scripts.txt";
+		private const string GeneratedRoot = SystemIndexRoot + "generated/";
 
-		private Dictionary<string, Compiler> _compilers;
+		private const string IndexPath = SystemIndexRoot + "scripts.txt";
+		private const string GeneratedItemsPath = GeneratedRoot + "items.inline.cs";
 
 		private Dictionary<string, Type> _scripts;
 		private Dictionary<int, ItemScript> _itemScripts;
@@ -53,11 +50,6 @@ namespace Aura.Channel.Scripting
 
 		public ScriptManager()
 		{
-			_compilers = new Dictionary<string, Compiler>();
-			_compilers.Add("cs", new CSharpCompiler());
-			_compilers.Add("boo", new BooCompiler());
-			_compilers.Add("dll", new DllLoader());
-
 			_scripts = new Dictionary<string, Type>();
 			_itemScripts = new Dictionary<int, ItemScript>();
 			_aiScripts = new Dictionary<string, Type>();
@@ -159,11 +151,24 @@ namespace Aura.Channel.Scripting
 			int done = 0, loaded = 0;
 			foreach (string filePath in toLoad.Values)
 			{
-				var asm = this.Compile(filePath);
-				if (asm != null)
+				if (!File.Exists(filePath))
 				{
-					this.LoadScriptAssembly(asm, filePath);
-					loaded++;
+					Log.Error("Script '{0}' not found.", filePath);
+					continue;
+				}
+
+				try
+				{
+					var asm = Loader.LoadAssembly(filePath);
+					if (asm != null)
+					{
+						this.LoadScriptAssembly(asm, filePath);
+						loaded++;
+					}
+				}
+				catch (Exception ex)
+				{
+					Log.Exception(ex, "LoadScript: Problem while loading script '{0}'", filePath);
 				}
 
 				if (done % 5 == 0)
@@ -171,6 +176,7 @@ namespace Aura.Channel.Scripting
 
 				done++;
 			}
+
 			Log.Progress(100, 100);
 
 			// Init scripts
@@ -192,7 +198,7 @@ namespace Aura.Channel.Scripting
 			_itemScripts.Clear();
 
 			// Place generated script in the cache folder
-			var tmpPath = this.GetCachePath(Path.Combine(SystemIndexRoot, "items", "inline.generated.cs")).Replace(".compiled", "");
+			const string tmpPath = GeneratedItemsPath;
 
 			// We go over all items only once, inline scripts are added
 			// to the generated script if the inline script needs updating.
@@ -256,7 +262,7 @@ namespace Aura.Channel.Scripting
 					continue;
 				}
 
-				var asm = this.Compile(scriptPath);
+				var asm = Loader.LoadAssembly(scriptPath);
 				if (asm != null)
 					this.LoadItemScriptAssembly(asm, entry.Id);
 
@@ -271,7 +277,7 @@ namespace Aura.Channel.Scripting
 
 			// Compile will update assembly if generated script was updated
 			//foreach (string filePath in )
-			var inlineAsm = this.Compile(tmpPath);
+			var inlineAsm = Loader.LoadAssembly(tmpPath);
 			if (inlineAsm != null)
 				this.LoadItemScriptAssembly(inlineAsm);
 
@@ -296,7 +302,7 @@ namespace Aura.Channel.Scripting
 				{
 					var fileName = Path.GetFileNameWithoutExtension(filePath);
 
-					var asm = this.Compile(filePath);
+					var asm = Loader.TryLoadAssembly(filePath);
 					if (asm != null)
 					{
 						// Get first AiScript class and save the type
@@ -361,60 +367,6 @@ namespace Aura.Channel.Scripting
 			script.Creature = creature;
 
 			return script;
-		}
-
-		/// <summary>
-		///  Compiles script and returns the resulting assembly, or null.
-		/// </summary>
-		/// <param name="path"></param>
-		/// <returns></returns>
-		private Assembly Compile(string path)
-		{
-			if (!File.Exists(path))
-			{
-				Log.Error("Script '{0}' not found.", path);
-				return null;
-			}
-
-			var outPath = this.GetCachePath(path);
-
-			Compiler compiler;
-			_compilers.TryGetValue(Path.GetExtension(path).TrimStart('.'), out compiler);
-			if (compiler == null)
-			{
-				Log.Error("No compiler found for script '{0}'.", path);
-				return null;
-			}
-
-			try
-			{
-				var scriptAsm = compiler.Compile(path, outPath);
-				//this.LoadScriptAssembly(scriptAsm);
-
-				return scriptAsm;
-			}
-			catch (CompilerErrorsException ex)
-			{
-				try
-				{
-					if (File.Exists(outPath))
-						File.Delete(outPath);
-				}
-				catch (UnauthorizedAccessException)
-				{
-					Log.Warning("Unable to delete '{0}'", outPath);
-				}
-
-				foreach (var e in ex.Errors)
-					e.Print();
-			}
-			catch (Exception ex)
-			{
-				Log.Exception(ex, "LoadScript: Problem while loading script '{0}'", path);
-				//File.Delete(outPath);
-			}
-
-			return null;
 		}
 
 		private static IEnumerable<Type> GetJITtedTypes(Assembly asm, string filePath)
@@ -574,23 +526,6 @@ namespace Aura.Channel.Scripting
 
 				itemId = 0;
 			}
-		}
-
-		/// <summary>
-		/// Returns path for the compiled version of the script.
-		/// Creates directory structure if it doesn't exist.
-		/// </summary>
-		/// <param name="path"></param>
-		/// <returns></returns>
-		private string GetCachePath(string path)
-		{
-			var result = (!path.StartsWith("cache") ? Path.Combine("cache", path + ".compiled") : path + ".compiled");
-			var dir = Path.GetDirectoryName(result);
-
-			if (!Directory.Exists(dir))
-				Directory.CreateDirectory(dir);
-
-			return result;
 		}
 
 		/// <summary>
