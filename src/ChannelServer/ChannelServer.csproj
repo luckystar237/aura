@@ -136,6 +136,7 @@
     <Compile Include="Scripting\Compilers\BooCompiler.cs" />
     <Compile Include="Scripting\Compilers\DllLoader.cs" />
     <Compile Include="Scripting\CreatureSpawn.cs" />
+    <Compile Include="Scripting\Loaders\Loader.cs" />
     <Compile Include="Scripting\NpcSession.cs" />
     <Compile Include="Scripting\ScriptAttributes.cs" />
     <Compile Include="Scripting\Scripts\AiScript.cs" />
